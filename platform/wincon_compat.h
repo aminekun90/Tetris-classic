@@ -9,7 +9,11 @@
 #define WINCON_COMPAT_H
 #ifndef _WIN32
 
+// <windows.h> tirait <string.h> par transitivité : le code de 2008 appelle
+// memcpy et memset sans jamais les inclure. MSVC et libc++ le laissent passer,
+// libstdc++ non. Le shim remplace windows.h, il doit donc en fournir autant.
 #include <cstddef>
+#include <cstring>
 #include <cwchar>
 
 typedef short           SHORT;
