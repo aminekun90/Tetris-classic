@@ -35,3 +35,11 @@ Release
 *.out
 *.app
 *.sdf
+# CMake
+build/
+CMakeUserPresets.json
+
+# Visual Studio — fichiers utilisateur, jamais versionnés
+*.suo
+*.user
+*.aps

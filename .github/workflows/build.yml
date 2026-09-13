@@ -1,0 +1,35 @@
+name: Build
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  windows:
+    name: Windows x86 (MSVC)
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Configure (Win32)
+        run: cmake -B build -A Win32
+
+      - name: Build
+        run: cmake --build build --config Release
+
+      - name: Vérifier que l'exécutable existe
+        shell: pwsh
+        run: |
+          $exe = "build/Release/Tetris.exe"
+          if (-not (Test-Path $exe)) { throw "Tetris.exe absent" }
+          Get-Item $exe | Format-List Name, Length
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tetris-win32
+          path: |
+            build/Release/Tetris.exe
+            score.data
+            splus.data
