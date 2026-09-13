@@ -143,6 +143,12 @@ BOOL GetWindowRect(HWND hWnd, RECT* lpRect);
 int  lstrlenW(LPCWSTR s);
 
 void Sleep(DWORD dwMilliseconds);
+
+// Le jeu écrit et lit au clavier avec cout / cin pour saisir le nom du
+// gagnant. ncurses possède l'écran pendant ce temps : il faut lui rendre le
+// terminal, sinon la saisie s'affiche n'importe où et l'écho est coupé.
+void WinConSuspend();   // rend le terminal à stdio, écran effacé
+void WinConResume();    // reprend la main, écran restauré
 int  wsprintfW(wchar_t* buffer, const wchar_t* format, ...);
 
 // Le jeu est compilé en UNICODE : les macros Windows pointent sur les variantes W.

@@ -1,4 +1,5 @@
 #include "functions.h"
+#include <cstdlib>
 
 
 void menu(){
@@ -583,8 +584,13 @@ bool CheckMatrix(HANDLE buf, BYTE matrix[][30])
 	return false;
 }
 
+// Vue de mise au point laissée active dans le code de 2008 : elle imprime la
+// matrice de collision par-dessus l'aire de jeu. Conservée, mais sur demande —
+// TETRIS_DEBUG_MATRIX=1 pour la revoir.
 void DebugMatrix(HANDLE buf, BYTE matrix[][30])
 {
+	if (getenv("TETRIS_DEBUG_MATRIX") == NULL) return;
+
 	wchar_t bb[12];
 	COORD crd = { 1, 1 };
 

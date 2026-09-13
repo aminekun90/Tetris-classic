@@ -63,6 +63,42 @@ Sur macOS ou Linux, **rien de tout cela ne tourne** : la seule vérification pos
 depuis un poste non-Windows est la CI GitHub (`.github/workflows/build.yml`,
 `windows-latest`), qui compile et publie `Tetris.exe` en artefact.
 
+## Pièges du portage POSIX (`platform/`)
+
+**`curses.h` redéfinit `KEY_EVENT`.** ncurses le met à `0633` octal, soit **411**.
+Comme `<curses.h>` est inclus après `wincon_compat.h`, écrire
+`record.EventType = KEY_EVENT` dans le shim y met 411, alors que le jeu — qui
+n'inclut jamais curses — compare à 1. Résultat : le clavier ne répond à rien,
+sans le moindre message. Le shim utilise la constante `kWinConKeyEvent`, jamais
+la macro. **Vérifier ce genre de collision pour tout nom ajouté à
+`wincon_compat.h`.**
+
+**En lecture non bloquante, ncurses ne rassemble pas les séquences d'échappement.**
+Une flèche envoie `ESC [ A` ; `getch()` rend l'`ESC` seul, même avec `keypad()`.
+Le jeu le prend pour Échap et appelle `exit(0)`. `readKey()` assemble la séquence
+à la main — les trois octets arrivent dans le même paquet, ils sont déjà dans le
+tampon quand on relit.
+
+**Ne pas rafraîchir à chaque écriture.** Le menu du jeu boucle à vide et émet
+plus de 800 000 écritures en une seconde. Un `refresh()` par écriture produisait
+2,4 Mo de séquences ANSI en trois secondes. Le rendu se fait cellule par cellule
+et le rafraîchissement est différé aux deux endroits où le jeu rend la main :
+`PeekConsoleInput` et `Sleep`. Même écran, 584 octets.
+
+**`<windows.h>` fournissait `<string.h>`.** Le code appelle `memcpy` et `memset`
+sans les inclure. MSVC et libc++ laissent passer, libstdc++ non — d'où un échec
+CI Linux seul. Le shim inclut `<cstring>` puisqu'il remplace `windows.h`.
+
+**`cout` / `cin` pendant que ncurses tient l'écran.** La saisie du nom dans
+`RegisterScore` écrivait n'importe où sans écho. `WinConSuspend()` /
+`WinConResume()` rendent le terminal à stdio le temps de la saisie. Même endroit,
+`system("cls")` n'existe pas hors Windows.
+
+**`DebugMatrix` est une vue de mise au point restée active** dans le code de
+2008 : elle imprime la matrice de collision en 0 et 1 par-dessus l'aire de jeu.
+Elle est maintenant conditionnée à `TETRIS_DEBUG_MATRIX=1`. C'est la seule
+entorse assumée à la règle « on ne nettoie pas le code de 2008 ».
+
 ## L'enveloppe macOS (`macos/`)
 
 `Tetris.app` est une fenêtre SwiftUI qui contient un émulateur de terminal

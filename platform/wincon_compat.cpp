@@ -33,6 +33,7 @@
 #include <clocale>
 #include <cstdarg>
 #include <cstdio>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
@@ -454,6 +455,22 @@ int lstrlenW(LPCWSTR s) {
     int n = 0;
     while (s[n]) ++n;
     return n;
+}
+
+void WinConSuspend() {
+    if (!g_cursesReady) return;
+    def_prog_mode();
+    endwin();
+    std::fflush(stdout);
+    std::printf("\033[2J\033[H");   // écran propre pour la saisie stdio
+    std::fflush(stdout);
+}
+
+void WinConResume() {
+    if (!g_cursesReady) return;
+    reset_prog_mode();
+    if (g_active) blit(*g_active);
+    refresh();
 }
 
 void Sleep(DWORD ms) {
