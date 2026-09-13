@@ -89,6 +89,18 @@ et le rafraîchissement est différé aux deux endroits où le jeu rend la main 
 sans les inclure. MSVC et libc++ laissent passer, libstdc++ non — d'où un échec
 CI Linux seul. Le shim inclut `<cstring>` puisqu'il remplace `windows.h`.
 
+**`WriteConsoleOutputCharacter` n'écrit QUE le caractère.** Sous Windows il ne
+touche pas aux attributs de la cellule. Les écraser avec l'attribut courant —
+c'était mon premier réflexe — efface la bordure blanche du plateau partout où le
+jeu pose un bloc, et casse `MoveMatrixDown`, qui **relit l'écran** (`ReadConsoleOutput*`)
+pour faire descendre les lignes. Le jeu se sert de la console comme structure de
+données : toute approximation sur la sémantique d'une de ces fonctions devient un
+bug de gameplay.
+
+**Pour diagnostiquer le rendu sans écran** : `TETRIS_DUMP_SCREEN=/tmp/s.txt` écrit
+la grille active à chaque rafraîchissement, les cellules à fond coloré marquées
+`#`. C'est ce qui a montré la bordure trouée.
+
 **`cout` / `cin` pendant que ncurses tient l'écran.** La saisie du nom dans
 `RegisterScore` écrivait n'importe où sans écho. `WinConSuspend()` /
 `WinConResume()` rendent le terminal à stdio le temps de la saisie. Même endroit,

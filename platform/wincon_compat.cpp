@@ -34,6 +34,7 @@
 #include <cstdarg>
 #include <cstdio>
 #include <cstdio>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
@@ -154,9 +155,33 @@ void touchedRange(ScreenBuffer* sb, int x, int y, DWORD count) {
 // que d'en faire un par écriture — le jeu en émet des dizaines par image — on
 // marque l'écran sale et on rafraîchit aux deux endroits où le jeu rend la
 // main : la lecture du clavier et Sleep().
+// Outil de mise au point : TETRIS_DUMP_SCREEN=/chemin écrit la grille active
+// à chaque rafraîchissement. Les cellules ayant un fond coloré sortent en '#',
+// ce qui rend les bordures et les blocs visibles en texte. Indispensable pour
+// diagnostiquer le rendu sans écran.
+void dumpScreen() {
+    const char* path = getenv("TETRIS_DUMP_SCREEN");
+    if (!path || !g_active) return;
+    FILE* f = fopen(path, "w");
+    if (!f) return;
+    const ScreenBuffer& sb = *g_active;
+    fprintf(f, "buffer %dx%d\n", sb.cols, sb.rows);
+    for (int y = 0; y < sb.rows; ++y) {
+        for (int x = 0; x < sb.cols; ++x) {
+            WORD a = sb.attrs[sb.index(x, y)];
+            wchar_t c = sb.chars[sb.index(x, y)];
+            bool bg = (a & (BACKGROUND_RED|BACKGROUND_GREEN|BACKGROUND_BLUE)) != 0;
+            fputc(bg ? '#' : ((c >= 32 && c < 127) ? (int)c : '.'), f);
+        }
+        fputc('\n', f);
+    }
+    fclose(f);
+}
+
 void flushIfDirty() {
     if (!g_dirty) return;
     refresh();
+    dumpScreen();
     g_dirty = false;
 }
 
@@ -274,8 +299,11 @@ BOOL WriteConsoleOutputCharacterW(HANDLE h, LPCWSTR text, DWORD len,
     for (DWORD i = 0; i < len; ++i) {
         int x = at.X + static_cast<int>(i);
         if (!sb->inside(x, at.Y)) break;
+        // Windows n'écrit ici QUE le caractère : les attributs de la cellule
+        // sont laissés intacts. Les écraser effaçait la bordure blanche du
+        // plateau partout où le jeu écrit un bloc, et cassait MoveMatrixDown,
+        // qui relit l'écran pour faire descendre les lignes.
         sb->chars[sb->index(x, at.Y)] = text[i];
-        sb->attrs[sb->index(x, at.Y)] = sb->currentAttr;
         ++n;
     }
     if (written) *written = n;
