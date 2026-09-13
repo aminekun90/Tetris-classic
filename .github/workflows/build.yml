@@ -2,13 +2,13 @@ name: Build
 
 on:
   push:
-    branches: [main]
+    branches: [master]
   pull_request:
   workflow_dispatch:
 
 jobs:
   windows:
-    name: Windows x86 (MSVC)
+    name: Windows x86 (MSVC, code d'origine)
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
@@ -33,3 +33,59 @@ jobs:
             build/Release/Tetris.exe
             score.data
             splus.data
+
+  linux:
+    name: Linux x86_64 (ncursesw + libxmp)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dépendances
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y cmake pkg-config libncursesw5-dev libxmp-dev libsdl2-dev
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Vérifier l'exécutable
+        run: file build/Tetris && test -f build/a.xm
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tetris-linux-x86_64
+          path: |
+            build/Tetris
+            build/a.xm
+            build/score.data
+            build/splus.data
+
+  macos:
+    name: macOS arm64 (ncurses + libxmp)
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Dépendances
+        run: brew install cmake pkg-config libxmp sdl2
+
+      - name: Configure
+        run: cmake -B build -DCMAKE_BUILD_TYPE=Release
+
+      - name: Build
+        run: cmake --build build
+
+      - name: Vérifier l'exécutable
+        run: file build/Tetris && test -f build/a.xm
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Tetris-macos-arm64
+          path: |
+            build/Tetris
+            build/a.xm
+            build/score.data
+            build/splus.data

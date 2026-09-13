@@ -86,7 +86,7 @@ void menu(){
 			FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
 		}
 
-		//Couleur du texte du menu selon la flèche appuiyée
+		//Couleur du texte du menu selon la flÃ¨che appuiyÃ©e
 		if ( inputCode == VK_DOWN || inputCode == VK_RIGHT)
 		{
 			Score = VERT;
@@ -156,7 +156,7 @@ void DrawHLine(HANDLE console, COORD coord, WORD len, WORD attrs)
 	FillConsoleOutputAttribute(console, attrs, len, coord, &wr);
 }
 
-void DrawText(HANDLE console, COORD coord, wchar_t* text, WORD attrs)
+void DrawText(HANDLE console, COORD coord, const wchar_t* text, WORD attrs)
 {
 	DWORD wr;
 	DWORD len = lstrlenW(text);
@@ -164,7 +164,7 @@ void DrawText(HANDLE console, COORD coord, wchar_t* text, WORD attrs)
 	WriteConsoleOutputCharacter(console, text, len, coord, &wr);
 	FillConsoleOutputAttribute(console, attrs, len, coord, &wr);
 }
-void DrawText(HANDLE console, COORD coord, string &text, WORD attrs)
+void DrawText(HANDLE console, COORD coord, const string &text, WORD attrs)
 {
 	wchar_t *temp;
 	temp = new wchar_t[text.length()];
@@ -629,9 +629,9 @@ void PrintDifficulty(HANDLE buf, DWORD difficulty, DWORD next)
 	coord.Y = 8;
 
 	if (difficulty == 0)
-		wsprintf(bb, L"Difficulté: 1            ");
+		wsprintf(bb, L"DifficultÃ©: 1            ");
 	else
-		wsprintf(bb, L"Difficulté: %u", difficulty + 1);
+		wsprintf(bb, L"DifficultÃ©: %u", difficulty + 1);
 
 	DrawText(buf, coord, bb, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
 
@@ -918,7 +918,7 @@ void start()
 	DrawText(buf, coord, L"Next:");
 
 	coord.Y = 25;
-	DrawText(buf, coord, L"F   - Repère");
+	DrawText(buf, coord, L"F   - RepÃ¨re");
 	coord.Y = 26;
 	DrawText(buf, coord, L"P   - Pause");
 	coord.Y = 27;
