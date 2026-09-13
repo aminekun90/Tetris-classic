@@ -123,7 +123,15 @@ void paintCell(const ScreenBuffer& sb, int x, int y) {
     attr_t at = A_NORMAL;
     if (g_hasColor) at |= COLOR_PAIR(pair);
     if (a & FOREGROUND_INTENSITY) at |= A_BOLD;
-    wchar_t wc[2] = { sb.chars[i], L'\0' };
+    // La console Windows affiche un blanc pour NUL et les caractères de
+    // contrôle. ncurses, lui, les dessine en notation caret : un NUL sort
+    // en « ^@ », sur DEUX cellules. Le jeu écrit justement L"" — donc un
+    // NUL — pour chaque case de pièce quand le mode « points » est actif :
+    // les formes se retrouvaient éclatées et débordaient hors du plateau.
+    wchar_t ch = sb.chars[i];
+    if (ch < 32) ch = L' ';
+
+    wchar_t wc[2] = { ch, L'\0' };
     cchar_t cc;
     if (setcchar(&cc, wc, at, pair, nullptr) == OK)
         mvadd_wch(y, x, &cc);

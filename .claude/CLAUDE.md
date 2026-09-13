@@ -97,6 +97,14 @@ pour faire descendre les lignes. Le jeu se sert de la console comme structure de
 données : toute approximation sur la sémantique d'une de ces fonctions devient un
 bug de gameplay.
 
+**NUL et les caractères de contrôle doivent sortir en blanc.** `DrawFigure`
+écrit `L""` — une chaîne vide, donc un `\0` — pour chaque case d'une pièce quand
+le mode « points » est actif. La console Windows affiche NUL comme un blanc et
+seule la couleur de fond dessine le bloc. ncurses, lui, rend les caractères de
+contrôle en **notation caret** : un NUL sort en `^@`, **sur deux cellules**. Les
+pièces apparaissaient éclatées en `^@ @` et débordaient hors du plateau.
+`paintCell` remplace donc tout caractère `< 32` par une espace.
+
 **Pour diagnostiquer le rendu sans écran** : `TETRIS_DUMP_SCREEN=/tmp/s.txt` écrit
 la grille active à chaque rafraîchissement, les cellules à fond coloré marquées
 `#`. C'est ce qui a montré la bordure trouée.
