@@ -54,6 +54,9 @@ jobs:
       - name: Vérifier l'exécutable
         run: file build/Tetris && test -f build/a.xm
 
+      - name: Tests d'écran
+        run: python3 tests/play.py
+
       - uses: actions/upload-artifact@v4
         with:
           name: Tetris-linux-x86_64
@@ -80,6 +83,9 @@ jobs:
 
       - name: Vérifier l'exécutable
         run: file build/Tetris && test -f build/a.xm
+
+      - name: Tests d'écran
+        run: python3 tests/play.py
 
       - uses: actions/upload-artifact@v4
         with:

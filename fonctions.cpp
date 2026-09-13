@@ -944,7 +944,15 @@ void start()
 
 	SYSTEMTIME time;
 	GetSystemTime(&time);
-	srand(time.wSecond + time.wMinute * 60 + time.wHour * 3600);
+	/* La graine vient de l'heure, donc la suite de pieces change a chaque
+	   partie — c'est voulu en jeu, mais cela rend tout test de reference
+	   impossible. TETRIS_SEED fixe la graine : rien ne change pour un
+	   joueur, et une partie devient rejouable a l'identique. */
+	{
+		const char* graine = getenv("TETRIS_SEED");
+		if (graine) srand((unsigned)atoi(graine));
+		else        srand(time.wSecond + time.wMinute * 60 + time.wHour * 3600);
+	}
 
 	nextfig = rand() % 7;
 
@@ -1225,6 +1233,7 @@ void start()
 					{
 						if (input.EventType == KEY_EVENT)
 						if (input.Event.KeyEvent.bKeyDown)
+						{
 						if (input.Event.KeyEvent.wVirtualKeyCode == 'p' || input.Event.KeyEvent.wVirtualKeyCode == 'P')
 						{
 							FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
@@ -1235,6 +1244,8 @@ void start()
 							menu();
 							break;
 						}
+						}   /* accolades explicites : le else se rattachait deja
+						       au test de 'p', mais rien ne le disait */
 
 						FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
 					}

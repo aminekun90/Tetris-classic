@@ -38,6 +38,7 @@
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
+#include <string>
 #include <vector>
 
 namespace {
@@ -170,7 +171,12 @@ void touchedRange(ScreenBuffer* sb, int x, int y, DWORD count) {
 void dumpScreen() {
     const char* path = getenv("TETRIS_DUMP_SCREEN");
     if (!path || !g_active) return;
-    FILE* f = fopen(path, "w");
+
+    /* Ecriture atomique : on passe par un fichier temporaire puis rename().
+       Sinon, tuer le jeu en pleine ecriture laisse un dump tronque, et un
+       test de reference echoue pour une raison qui n'a rien a voir. */
+    std::string tmp = std::string(path) + ".tmp";
+    FILE* f = fopen(tmp.c_str(), "w");
     if (!f) return;
     const ScreenBuffer& sb = *g_active;
     fprintf(f, "buffer %dx%d\n", sb.cols, sb.rows);
@@ -184,6 +190,7 @@ void dumpScreen() {
         fputc('\n', f);
     }
     fclose(f);
+    rename(tmp.c_str(), path);
 }
 
 void flushIfDirty() {

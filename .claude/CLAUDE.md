@@ -90,12 +90,21 @@ sans les inclure. MSVC et libc++ laissent passer, libstdc++ non — d'où un éc
 CI Linux seul. Le shim inclut `<cstring>` puisqu'il remplace `windows.h`.
 
 **`WriteConsoleOutputCharacter` n'écrit QUE le caractère.** Sous Windows il ne
-touche pas aux attributs de la cellule. Les écraser avec l'attribut courant —
-c'était mon premier réflexe — efface la bordure blanche du plateau partout où le
-jeu pose un bloc, et casse `MoveMatrixDown`, qui **relit l'écran** (`ReadConsoleOutput*`)
-pour faire descendre les lignes. Le jeu se sert de la console comme structure de
-données : toute approximation sur la sémantique d'une de ces fonctions devient un
-bug de gameplay.
+touche pas aux attributs de la cellule ; le shim doit faire pareil.
+
+⚠️ **Correction d'une affirmation antérieure.** J'avais écrit ici, et dans un
+message de commit, que ce point expliquait la bordure trouée observée à
+l'écran. **C'est faux, et le harnais de test le démontre** : en réintroduisant
+délibérément l'écrasement d'attributs, tous les invariants passent. La raison
+est simple — les huit écritures de caractères de `fonctions.cpp` sont *toutes*
+suivies immédiatement d'une écriture d'attribut, qui restaure la couleur. Le
+défaut n'a donc aucun effet observable dans ce programme.
+
+La bordure trouée venait du **rendu de NUL en notation caret** (`^@`, deux
+cellules), qui décalait le contenu au-delà du bord. La correction des attributs
+reste juste — c'est la sémantique de Windows, et `MoveMatrixDown` relit l'écran
+avec `ReadConsoleOutput*` — mais elle relève de la fidélité, pas d'un bug
+constaté.
 
 **NUL et les caractères de contrôle doivent sortir en blanc.** `DrawFigure`
 écrit `L""` — une chaîne vide, donc un `\0` — pour chaque case d'une pièce quand
@@ -107,7 +116,15 @@ pièces apparaissaient éclatées en `^@ @` et débordaient hors du plateau.
 
 **Pour diagnostiquer le rendu sans écran** : `TETRIS_DUMP_SCREEN=/tmp/s.txt` écrit
 la grille active à chaque rafraîchissement, les cellules à fond coloré marquées
-`#`. C'est ce qui a montré la bordure trouée.
+`#`. L'écriture est atomique (fichier temporaire puis `rename`) : sans cela, tuer
+le jeu en pleine écriture laisse un dump tronqué et un test échoue pour rien.
+
+Attention : le dump montre la **grille logique**, pas ce que ncurses a réellement
+peint. Un défaut de rendu — le `^@` sur deux cellules, par exemple — y est
+invisible. Pour ceux-là, il faut examiner la sortie brute du terminal.
+
+**Graine reproductible** : `TETRIS_SEED=42` fixe `srand`. Sans elle la suite de
+pièces vient de l'heure, et aucune partie n'est rejouable.
 
 **`cout` / `cin` pendant que ncurses tient l'écran.** La saisie du nom dans
 `RegisterScore` écrivait n'importe où sans écho. `WinConSuspend()` /
@@ -118,6 +135,30 @@ la grille active à chaque rafraîchissement, les cellules à fond coloré marqu
 2008 : elle imprime la matrice de collision en 0 et 1 par-dessus l'aire de jeu.
 Elle est maintenant conditionnée à `TETRIS_DEBUG_MATRIX=1`. C'est la seule
 entorse assumée à la règle « on ne nettoie pas le code de 2008 ».
+
+## Tests
+
+```bash
+cmake --build build && ./tests/play.py
+```
+
+Deux familles, parce que tout n'est pas reproductible :
+
+- **Écrans de référence** (`tests/golden/`), comparés au caractère près : les
+  menus ne dépendent que des touches.
+- **Invariants de structure** pendant une partie : la gravité dépend de
+  l'horloge, deux exécutions ne donnent jamais le même écran. On vérifie donc
+  ce qui doit rester vrai quoi qu'il arrive — cadre fermé sur les quatre côtés,
+  rien au-delà du bord droit, libellés du panneau présents, pièces dessinées
+  par un fond coloré, et aucune notation caret dans la sortie brute.
+
+`./tests/play.py --record` régénère les écrans de référence. À ne faire
+qu'après avoir constaté de visu que le nouvel écran est correct.
+
+**Un test ne vaut que s'il échoue quand il doit.** Vérifié : en réintroduisant
+le rendu de NUL en `^@`, les cinq scénarios de partie tombent. En réintroduisant
+l'écrasement d'attributs, en revanche, **tout passe** — c'est ce qui a permis de
+découvrir que ce défaut n'a aucun effet observable ici.
 
 ## L'enveloppe macOS (`macos/`)
 
