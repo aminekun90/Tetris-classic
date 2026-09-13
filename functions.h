@@ -15,7 +15,6 @@ void DrawText(HANDLE console, COORD coord, wchar_t* text, WORD attrs = JAUNE);
 void DrawText(HANDLE console, COORD coord, string&, WORD attrs = JAUNE);
 void PrintHightScore(HANDLE buf);
 
-void main();
 void menu();
 void start();
 void score();
