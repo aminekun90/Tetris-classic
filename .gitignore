@@ -43,3 +43,7 @@ CMakeUserPresets.json
 *.suo
 *.user
 *.aps
+
+# SwiftPM / bundle macOS
+macos/.build/
+macos/Tetris.app/

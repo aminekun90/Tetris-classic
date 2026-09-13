@@ -63,6 +63,31 @@ Sur macOS ou Linux, **rien de tout cela ne tourne** : la seule vérification pos
 depuis un poste non-Windows est la CI GitHub (`.github/workflows/build.yml`,
 `windows-latest`), qui compile et publie `Tetris.exe` en artefact.
 
+## L'enveloppe macOS (`macos/`)
+
+`Tetris.app` est une fenêtre SwiftUI qui contient un émulateur de terminal
+(**SwiftTerm**) dans lequel tourne le binaire du jeu. Le C++ n'est pas modifié :
+l'app lance l'exécutable comme un processus enfant.
+
+```bash
+./macos/make-app.sh      # CMake + SwiftPM + assemblage du bundle
+open macos/Tetris.app
+```
+
+**`DEVELOPER_DIR` est obligatoire.** SwiftTerm embarque un shader Metal ; le
+compilateur `metal` n'existe pas dans les Command Line Tools. Sans
+`DEVELOPER_DIR=/Applications/Xcode.app/Contents/Developer`, `swift build` échoue
+sur `unable to spawn process 'metal'`. `make-app.sh` le pose par défaut.
+
+**Ne pas hériter de `LocalProcessTerminalView` pour être son propre délégué** :
+la classe implémente déjà `LocalProcessTerminalViewDelegate` pour son compte, et
+la sous-classer donne `overriding declaration requires an override keyword`. Le
+délégué est un objet séparé (`TerminalCoordinator`).
+
+Le binaire est cherché d'abord dans `Contents/Resources` (app distribuée), puis en
+remontant vers `build/Tetris` (développement) — un bundle sans binaire affiche les
+commandes de build au lieu d'une fenêtre vide.
+
 ## État
 Le projet Visual Studio d'origine (`Tetris.sln`, `.vcxproj`, toolsets `v140_xp` / `v141`)
 est conservé pour l'histoire mais n'est plus le build supporté. Si les deux divergent,
