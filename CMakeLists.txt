@@ -36,10 +36,16 @@ target_link_libraries(Tetris PRIVATE
   ${CMAKE_CURRENT_SOURCE_DIR}/ufmod.lib
 )
 
+# Le jeu est écrit pour un build UNICODE : buffers wchar_t, littéraux L"...",
+# et wsprintf qui doit se résoudre en wsprintfW. Le .vcxproj d'origine porte
+# CharacterSet=Unicode ; retirer ces deux définitions casse la compilation.
+target_compile_definitions(Tetris PRIVATE UNICODE _UNICODE)
+
 if(MSVC)
   # Le code de 2008 est antérieur aux fonctions « sécurisées » du CRT.
   target_compile_definitions(Tetris PRIVATE _CRT_SECURE_NO_WARNINGS)
-  target_compile_options(Tetris PRIVATE /source-charset:.1252 /execution-charset:.1252)
+  # Les sources sont en ISO-8859-1, pas en UTF-8.
+  target_compile_options(Tetris PRIVATE /source-charset:.1252)
 endif()
 
 # Les scores sont lus et écrits à côté de l'exécutable.

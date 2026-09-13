@@ -27,10 +27,15 @@ jeu réel.
 peut traiter le fichier comme binaire ; passer par `iconv -f ISO-8859-1 -t UTF-8` pour le
 lire. MSVC reçoit `/source-charset:.1252` — le retirer casse l'affichage des accents.
 
-**`DrawText` est un macro Windows.** `windows.h` le redéfinit en `DrawTextA` (build MBCS).
-Les déclarations de `functions.h` deviennent donc `DrawTextA`. C'est cohérent et ça
-compile, mais toute introduction d'`UNICODE` fera basculer sur `DrawTextW` et cassera
-l'édition de liens.
+**Le build est en UNICODE, et ce n'est pas négociable.** Le code utilise des buffers
+`wchar_t`, des littéraux `L"…"` et `wsprintf`, qui doit se résoudre en `wsprintfW`. Le
+`.vcxproj` d'origine porte `CharacterSet=Unicode`. Compiler en MBCS donne une cascade de
+`C2664: cannot convert 'wchar_t [N]' to 'LPSTR'` — c'est exactement l'erreur que la
+première tentative de CI a produite. `CMakeLists.txt` définit `UNICODE` et `_UNICODE`.
+
+**`DrawText` est un macro Windows.** `windows.h` le résout en `DrawTextW` en build
+UNICODE, ce qui correspond bien à la surcharge `DrawText(HANDLE, COORD, wchar_t*, WORD)`
+de `functions.h`. Cohérent, mais fragile : c'est un macro, pas une fonction.
 
 **La musique vient des ressources, pas d'un fichier.** `uFMOD_PlaySong((void*)1, NULL,
 XM_RESOURCE)` lit la ressource `RCDATA` d'identifiant 1, définie par `MUSIC` dans
