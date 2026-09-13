@@ -32,6 +32,7 @@
 
 #include <clocale>
 #include <cstdarg>
+#include <cstdio>
 #include <cstdlib>
 #include <cstring>
 #include <ctime>
@@ -90,9 +91,12 @@ void ensureCurses() {
     initscr();
     cbreak();
     noecho();
-    nodelay(stdscr, TRUE);
     keypad(stdscr, TRUE);
     curs_set(0);
+
+    // Lecture non bloquante : le jeu interroge le clavier dans sa boucle
+    // principale et ne doit jamais attendre dessus.
+    nodelay(stdscr, TRUE);
 
     g_hasColor = has_colors();
     if (g_hasColor) {
@@ -169,9 +173,32 @@ WORD translate(int ch) {
         case KEY_LEFT:  return VK_LEFT;
         case KEY_RIGHT: return VK_RIGHT;
         case '\n': case '\r': case KEY_ENTER: return VK_RETURN;
-        case 27:        return VK_ESCAPE;
         case 'q': case 'Q': return VK_ESCAPE;
         default: return 0;
+    }
+}
+
+// En lecture non bloquante, ncurses rend l'ESC d'une séquence de flèche
+// (ESC [ A) sans attendre la suite : keypad() ne suffit pas, et le jeu prend
+// cet ESC pour Échap — il quitte au lieu de déplacer la pièce. On assemble
+// donc la séquence à la main. Les trois octets d'une flèche arrivent dans le
+// même paquet, ils sont déjà dans le tampon quand on relit.
+WORD readKey() {
+    int ch = getch();
+    if (ch == ERR) return 0;
+
+    if (ch != 27) return translate(ch);
+
+    int second = getch();
+    if (second == ERR) return VK_ESCAPE;          // Échap seul
+    if (second != '[' && second != 'O') return VK_ESCAPE;
+
+    switch (getch()) {
+        case 'A': return VK_UP;
+        case 'B': return VK_DOWN;
+        case 'C': return VK_RIGHT;
+        case 'D': return VK_LEFT;
+        default:  return 0;                        // séquence ignorée
     }
 }
 
@@ -379,15 +406,14 @@ BOOL PeekConsoleInputW(HANDLE, INPUT_RECORD* buf, DWORD nLength, DWORD* read) {
     ensureCurses();
     flushIfDirty();
     if (!g_hasPending) {
-        int ch = getch();
-        if (ch != ERR) {
-            WORD vk = translate(ch);
-            if (vk) { g_pendingKey = vk; g_hasPending = true; }
+        WORD vk = readKey();
+        if (vk) {
+            g_pendingKey = vk; g_hasPending = true;
         }
     }
     DWORD n = 0;
     if (g_hasPending && buf && nLength > 0) {
-        buf[0].EventType = KEY_EVENT;
+        buf[0].EventType = kWinConKeyEvent;   // surtout pas la macro : curses la redéfinit
         buf[0].Event.KeyEvent.bKeyDown = TRUE;
         buf[0].Event.KeyEvent.wRepeatCount = 1;
         buf[0].Event.KeyEvent.wVirtualKeyCode = g_pendingKey;

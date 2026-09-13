@@ -48,6 +48,12 @@ struct CONSOLE_CURSOR_INFO {
 
 #define KEY_EVENT 0x0001
 
+// ⚠️ ncurses définit lui aussi KEY_EVENT, à 0633 octal (411). Dans le .cpp,
+// <curses.h> est inclus après cet en-tête et écrase la macro : écrire
+// « EventType = KEY_EVENT » y produisait 411, que le jeu — qui n'inclut jamais
+// curses — comparait à 1. Le shim doit utiliser cette constante, pas la macro.
+const WORD kWinConKeyEvent = 0x0001;
+
 struct KEY_EVENT_RECORD {
     BOOL  bKeyDown;
     WORD  wRepeatCount;
