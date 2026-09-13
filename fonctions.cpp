@@ -296,7 +296,7 @@ void score()
 		DrawText(Buffer, coord, L"-->", retour);
 		if(inputCode==VK_RETURN)
 		{
-			main();
+			menu();
 		}
 
 		
@@ -1325,6 +1325,6 @@ void start()
 	uFMOD_Pause();
 
 	RegisterScore(points);
-	main();
+	menu();
 
 }
