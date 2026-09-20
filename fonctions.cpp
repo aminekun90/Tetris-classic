@@ -1,4 +1,5 @@
 #include "functions.h"
+#include <cstdlib>
 
 
 void menu(){
@@ -86,7 +87,7 @@ void menu(){
 			FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
 		}
 
-		//Couleur du texte du menu selon la flèche appuiyée
+		//Couleur du texte du menu selon la flÃ¨che appuiyÃ©e
 		if ( inputCode == VK_DOWN || inputCode == VK_RIGHT)
 		{
 			Score = VERT;
@@ -156,7 +157,7 @@ void DrawHLine(HANDLE console, COORD coord, WORD len, WORD attrs)
 	FillConsoleOutputAttribute(console, attrs, len, coord, &wr);
 }
 
-void DrawText(HANDLE console, COORD coord, wchar_t* text, WORD attrs)
+void DrawText(HANDLE console, COORD coord, const wchar_t* text, WORD attrs)
 {
 	DWORD wr;
 	DWORD len = lstrlenW(text);
@@ -164,7 +165,7 @@ void DrawText(HANDLE console, COORD coord, wchar_t* text, WORD attrs)
 	WriteConsoleOutputCharacter(console, text, len, coord, &wr);
 	FillConsoleOutputAttribute(console, attrs, len, coord, &wr);
 }
-void DrawText(HANDLE console, COORD coord, string &text, WORD attrs)
+void DrawText(HANDLE console, COORD coord, const string &text, WORD attrs)
 {
 	wchar_t *temp;
 	temp = new wchar_t[text.length()];
@@ -296,7 +297,7 @@ void score()
 		DrawText(Buffer, coord, L"-->", retour);
 		if(inputCode==VK_RETURN)
 		{
-			main();
+			menu();
 		}
 
 		
@@ -583,8 +584,13 @@ bool CheckMatrix(HANDLE buf, BYTE matrix[][30])
 	return false;
 }
 
+// Vue de mise au point laissÃ©e active dans le code de 2008 : elle imprime la
+// matrice de collision par-dessus l'aire de jeu. ConservÃ©e, mais sur demande â€”
+// TETRIS_DEBUG_MATRIX=1 pour la revoir.
 void DebugMatrix(HANDLE buf, BYTE matrix[][30])
 {
+	if (getenv("TETRIS_DEBUG_MATRIX") == NULL) return;
+
 	wchar_t bb[12];
 	COORD crd = { 1, 1 };
 
@@ -629,9 +635,9 @@ void PrintDifficulty(HANDLE buf, DWORD difficulty, DWORD next)
 	coord.Y = 8;
 
 	if (difficulty == 0)
-		wsprintf(bb, L"Difficulté: 1            ");
+		wsprintf(bb, L"DifficultÃ©: 1            ");
 	else
-		wsprintf(bb, L"Difficulté: %u", difficulty + 1);
+		wsprintf(bb, L"DifficultÃ©: %u", difficulty + 1);
 
 	DrawText(buf, coord, bb, FOREGROUND_BLUE | FOREGROUND_GREEN | FOREGROUND_INTENSITY);
 
@@ -918,7 +924,7 @@ void start()
 	DrawText(buf, coord, L"Next:");
 
 	coord.Y = 25;
-	DrawText(buf, coord, L"F   - Repère");
+	DrawText(buf, coord, L"F   - RepÃ¨re");
 	coord.Y = 26;
 	DrawText(buf, coord, L"P   - Pause");
 	coord.Y = 27;
@@ -938,7 +944,15 @@ void start()
 
 	SYSTEMTIME time;
 	GetSystemTime(&time);
-	srand(time.wSecond + time.wMinute * 60 + time.wHour * 3600);
+	/* La graine vient de l'heure, donc la suite de pieces change a chaque
+	   partie â€” c'est voulu en jeu, mais cela rend tout test de reference
+	   impossible. TETRIS_SEED fixe la graine : rien ne change pour un
+	   joueur, et une partie devient rejouable a l'identique. */
+	{
+		const char* graine = getenv("TETRIS_SEED");
+		if (graine) srand((unsigned)atoi(graine));
+		else        srand(time.wSecond + time.wMinute * 60 + time.wHour * 3600);
+	}
 
 	nextfig = rand() % 7;
 
@@ -1219,6 +1233,7 @@ void start()
 					{
 						if (input.EventType == KEY_EVENT)
 						if (input.Event.KeyEvent.bKeyDown)
+						{
 						if (input.Event.KeyEvent.wVirtualKeyCode == 'p' || input.Event.KeyEvent.wVirtualKeyCode == 'P')
 						{
 							FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
@@ -1229,6 +1244,8 @@ void start()
 							menu();
 							break;
 						}
+						}   /* accolades explicites : le else se rattachait deja
+						       au test de 'p', mais rien ne le disait */
 
 						FlushConsoleInputBuffer(GetStdHandle(STD_INPUT_HANDLE));
 					}
@@ -1325,6 +1342,6 @@ void start()
 	uFMOD_Pause();
 
 	RegisterScore(points);
-	main();
+	menu();
 
 }

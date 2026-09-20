@@ -34,10 +34,19 @@ void RegisterScore(DWORD points){
 	string name;
 	if (points >= atoi(temp[5].c_str()))
 	{
+#ifdef _WIN32
 		system("cls");
+#else
+		// « cls » n'existe pas hors Windows, et ncurses tient l'écran :
+		// on lui rend le terminal le temps de la saisie.
+		WinConSuspend();
+#endif
 		cout << endl<<"\t\t\t\t-->Nouveau Score<--"<<endl;
 	cout << endl<<"\t\t\tVotre Nom : ";
 	cin >> name;
+#ifndef _WIN32
+	WinConResume();
+#endif
 	ofstream f("splus.data",ios::ate);
 	if (f)
 	{
